@@ -26,6 +26,7 @@ import "./../../src/css/main.css"
 import { CanvasSprite } from "./../../src/class/gameObject/base"
 import { GameMain } from "../../src/core/gameMain"
 import QuizGameManager from "../../src/quiz/QuizGameManager"
+import TowerReference from "../../src/quiz/TowerReference"
 window.userUtilsPro = userUtilsPro
 // import { KEY_CODE } from '../../src/utils/enum'
 // import { KEY_EVENT } from '../../src/utils/types'
@@ -101,6 +102,10 @@ userUtilsPro.xhrLoad("gameData/gameData.bin", function(e:any) {
                 m.on(EVENT_TYPE.LOAD_SCENEED, () => {
                   quizGameManager.onSceneReady()
                 })
+
+                // 防御塔 × C++ 参考面板（右上角）
+                const towerReference = new TowerReference()
+                window.testMain._towerReference = towerReference
                 // ===== Quiz 初始化结束 =====
                 userUtilsPro.notification("load gameData.bin and run core.js")
                 userUtilsPro.xhrLoad("script/core.js", function(e:any) {
