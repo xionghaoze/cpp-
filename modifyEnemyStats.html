@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>敌人属性修改工具 — 阻止传送</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, 'Microsoft YaHei', sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { text-align: center; font-size: 24px; margin-bottom: 8px; color: #e94560; }
+    .subtitle { text-align: center; font-size: 14px; color: #888; margin-bottom: 24px; }
+    .card { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+    .card h2 { font-size: 16px; margin-bottom: 12px; color: #53a8b6; }
+    label { display: block; font-size: 13px; color: #aaa; margin-bottom: 4px; }
+    input[type=range] { width: 100%; margin: 4px 0 12px; accent-color: #e94560; }
+    input[type=number] { width: 80px; padding: 4px 8px; border: 1px solid #0f3460; border-radius: 4px; background: #1a1a2e; color: #eee; text-align: center; }
+    .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .slider-row span { min-width: 120px; font-size: 13px; }
+    .slider-row .val { min-width: 48px; text-align: right; font-weight: bold; color: #e94560; }
+    button { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; transition: all .2s; }
+    .btn-primary { background: #e94560; color: #fff; width: 100%; }
+    .btn-primary:hover { background: #ff6b81; }
+    .btn-secondary { background: #0f3460; color: #53a8b6; }
+    .btn-secondary:hover { background: #1a4a7a; }
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    .preview { background: #0d1117; border: 1px solid #30363d; border-radius: 4px; padding: 12px; max-height: 300px; overflow-y: auto; font-size: 12px; font-family: 'Consolas', 'Courier New', monospace; white-space: pre-wrap; }
+    .status { padding: 8px 12px; border-radius: 4px; margin-top: 12px; font-size: 13px; display: none; }
+    .status.success { background: #1b4332; color: #95d5b2; display: block; }
+    .status.error { background: #4a1c1c; color: #f5a5a5; display: block; }
+    .status.info { background: #1a3a5c; color: #87ceeb; display: block; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; margin: 1px; }
+    .tag.ph { background: #e94560; color: #fff; }
+    .tag.def { background: #53a8b6; color: #000; }
+    .tag.hurt { background: #f0a500; color: #000; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🛡️ 敌人属性修改工具</h1>
+    <p class="subtitle">阻止传送 — gameData.bin 编辑器</p>
+
+    <div class="card">
+      <h2>1. 加载 gameData.bin</h2>
+      <input type="file" id="fileInput" accept=".bin" style="margin-bottom:8px;">
+      <div id="loadStatus" class="status"></div>
+    </div>
+
+    <div class="card" id="editCard" style="display:none;">
+      <h2>2. 调整属性倍率</h2>
+      <p style="font-size:12px;color:#888;margin-bottom:12px;">拖拽滑块调整倍率，实时预览效果</p>
+
+      <div class="slider-row">
+        <span>❤️ 最大生命值</span>
+        <input type="range" id="phSlider" min="1" max="5" step="0.1" value="2.0">
+        <span class="val" id="phVal">2.0x</span>
+      </div>
+      <div class="slider-row">
+        <span>🛡️ 防御力</span>
+        <input type="range" id="defSlider" min="1" max="5" step="0.1" value="1.5">
+        <span class="val" id="defVal">1.5x</span>
+      </div>
+      <div class="slider-row">
+        <span>⚔️ 攻击力</span>
+        <input type="range" id="hurtSlider" min="0.5" max="3" step="0.1" value="1.0">
+        <span class="val" id="hurtVal">1.0x</span>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" id="previewBtn" style="flex:1;">👁️ 预览修改</button>
+        <button class="btn-secondary" id="resetBtn" style="flex:0;">恢复默认</button>
+      </div>
+      <div id="previewOut" class="preview" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="card" id="downloadCard" style="display:none;">
+      <h2>3. 下载修改后的文件</h2>
+      <p style="font-size:12px;color:#888;margin-bottom:8px;">
+        下载新的 gameData.bin，替换 <code>public/gameData/gameData.bin</code><br>
+        原文件会自动备份到 <code>gameData.bin.backup</code>
+      </p>
+      <button class="btn-primary" id="downloadBtn">⬇️ 下载新的 gameData.bin</button>
+      <div id="downloadStatus" class="status"></div>
+    </div>
+
+    <div class="card" style="font-size:12px;color:#888;">
+      <h2>💡 提示</h2>
+      <ul style="margin-left:16px;line-height:1.8;">
+        <li><b>2x 血量</b>（推荐）：敌人肉度翻倍，游戏更有挑战但可玩</li>
+        <li><b>3x+ 血量</b>：需要更强策略和装备搭配</li>
+        <li>防御力目前代码中未实际参与伤害计算，仅作为预留属性</li>
+        <li>攻击力建议保持 1.0x 不变（避免敌人秒杀玩家）</li>
+        <li>替换前请确保已备份原始 gameData.bin</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="./node_modules/@zip.js/zip.js/dist/zip-no-worker.min.js"></script>
+  <script>
+    (function() {
+    // 使用 zip 全局对象（no-worker 版本）
+    const { ZipReader, ZipWriter, BlobReader, BlobWriter, TextReader, TextWriter, configure } = zip;
+    configure({ useWebWorkers: false });
+
+    const XOR_KEY = [104, 104, 115, 106];
+    const ZIP_PASSWORD = "No.1129754";
+    const BIN_FILENAME = "gameData.json";
+
+    let originalJson = null;
+    let modifiedJson = null;
+    let originalBinName = null;
+
+    // DOM elements
+    const $ = (id) => document.getElementById(id);
+    const fileInput = $("fileInput");
+    const loadStatus = $("loadStatus");
+    const editCard = $("editCard");
+    const downloadCard = $("downloadCard");
+    const phSlider = $("phSlider");
+    const defSlider = $("defSlider");
+    const hurtSlider = $("hurtSlider");
+    const phVal = $("phVal");
+    const defVal = $("defVal");
+    const hurtVal = $("hurtVal");
+    const previewOut = $("previewOut");
+    const downloadStatus = $("downloadStatus");
+    const previewBtn = $("previewBtn");
+    const resetBtn = $("resetBtn");
+    const downloadBtn = $("downloadBtn");
+
+    // Slider update
+    phSlider.oninput = () => { phVal.textContent = parseFloat(phSlider.value).toFixed(1) + "x"; };
+    defSlider.oninput = () => { defVal.textContent = parseFloat(defSlider.value).toFixed(1) + "x"; };
+    hurtSlider.oninput = () => { hurtVal.textContent = parseFloat(hurtSlider.value).toFixed(1) + "x"; };
+
+    // Reset
+    resetBtn.onclick = () => {
+      phSlider.value = 2.0; phVal.textContent = "2.0x";
+      defSlider.value = 1.5; defVal.textContent = "1.5x";
+      hurtSlider.value = 1.0; hurtVal.textContent = "1.0x";
+      if (originalJson) modifiedJson = JSON.parse(JSON.stringify(originalJson));
+      previewOut.innerHTML = "";
+    };
+
+    // File load
+    fileInput.onchange = async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      originalBinName = file.name;
+      loadStatus.className = "status info";
+      loadStatus.textContent = "⏳ 正在解密...";
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8 = new Uint8Array(arrayBuffer);
+
+        // XOR decode
+        for (let i = 0; i < uint8.length; i++) {
+          uint8[i] = uint8[i] ^ XOR_KEY[i % 4];
+        }
+
+        // Unzip
+        const blob = new Blob([uint8]);
+        const reader = new ZipReader(new BlobReader(blob), { filenameEncoding: "utf-8" });
+        const entries = await reader.getEntries();
+        if (entries.length === 0) throw new Error("Zip 文件中没有数据");
+        const jsonText = await entries[0].getData(new TextWriter(), { password: ZIP_PASSWORD });
+        await reader.close();
+
+        originalJson = JSON.parse(jsonText);
+        modifiedJson = JSON.parse(jsonText);
+
+        const roleCount = Object.keys(originalJson.roles || {}).length;
+        loadStatus.className = "status success";
+        loadStatus.textContent = "✅ 加载成功！找到 " + roleCount + " 个角色定义";
+
+        editCard.style.display = "block";
+        downloadCard.style.display = "block";
+        previewOut.innerHTML = "";
+      } catch (err) {
+        loadStatus.className = "status error";
+        loadStatus.textContent = "❌ 加载失败: " + err.message;
+        console.error(err);
+      }
+    };
+
+    // Preview
+    previewBtn.onclick = function() {
+      if (!originalJson) return;
+      applyMultipliers();
+      previewOut.innerHTML = renderPreview();
+    };
+
+    // Download
+    downloadBtn.onclick = async function() {
+      downloadStatus.className = "status info";
+      downloadStatus.textContent = "⏳ 正在打包...";
+
+      try {
+        applyMultipliers();
+        const jsonStr = JSON.stringify(modifiedJson);
+
+        // Zip
+        const zipWriter = new ZipWriter(new BlobWriter("application/zip"));
+        await zipWriter.add(BIN_FILENAME, new TextReader(jsonStr), {
+          bufferedWrite: true,
+          password: ZIP_PASSWORD,
+        });
+        const zipBlob = await zipWriter.close();
+
+        // XOR encode
+        const zipBuf = await zipBlob.arrayBuffer();
+        const zipUint8 = new Uint8Array(zipBuf);
+        for (let i = 0; i < zipUint8.length; i++) {
+          zipUint8[i] = zipUint8[i] ^ XOR_KEY[i % 4];
+        }
+
+        // Download
+        const downloadBlob = new Blob([zipUint8]);
+        const url = URL.createObjectURL(downloadBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = originalBinName || "gameData.bin";
+        a.click();
+        URL.revokeObjectURL(url);
+
+        downloadStatus.className = "status success";
+        downloadStatus.textContent = "✅ 下载成功！请将文件复制到 public/gameData/ 替换原文件（记得先备份）";
+      } catch (err) {
+        downloadStatus.className = "status error";
+        downloadStatus.textContent = "❌ 打包失败: " + err.message;
+        console.error(err);
+      }
+    };
+
+    function applyMultipliers() {
+      const phMul = parseFloat(phSlider.value);
+      const defMul = parseFloat(defSlider.value);
+      const hurtMul = parseFloat(hurtSlider.value);
+
+      modifiedJson = JSON.parse(JSON.stringify(originalJson));
+      const roles = modifiedJson.roles;
+      if (!roles) return;
+
+      for (const name of Object.keys(roles)) {
+        const data = roles[name];
+        if (data.maxPH && phMul !== 1.0) {
+          data.maxPH = Math.round(data.maxPH * phMul);
+        }
+        if (data.defense && defMul !== 1.0) {
+          data.defense = Math.round(data.defense * defMul);
+        }
+        if (data.hurt && hurtMul !== 1.0) {
+          data.hurt = Math.round(data.hurt * hurtMul);
+        }
+      }
+    }
+
+    function renderPreview() {
+      if (!modifiedJson) return "无数据";
+      const roles = modifiedJson.roles;
+      const lines = [];
+      const names = Object.keys(roles);
+      const limit = Math.min(15, names.length);
+      for (let i = 0; i < limit; i++) {
+        const name = names[i];
+        const data = roles[name];
+        lines.push('<b>' + name + '</b>  ' +
+          '<span class="tag ph">HP:' + data.maxPH + '</span> ' +
+          '<span class="tag def">DEF:' + data.defense + '</span> ' +
+          '<span class="tag hurt">ATK:' + data.hurt + '</span>');
+      }
+      if (names.length > 15) {
+        lines.push('... 还有 ' + (names.length - 15) + ' 个角色');
+      }
+      return lines.join('\n');
+    }
+    })();
+  </script>
+</body>
+</html>
