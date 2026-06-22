@@ -14,8 +14,30 @@
     </head>
     <body>
         <div id="app-wrapper" style="display:flex;width:100vw;height:100vh;overflow:hidden;">
-            <div id="quiz-sidebar" style="width:20%;min-width:280px;height:100%;background:#1a1a2e;color:#e0e0e0;overflow-y:auto;"></div>
+            <div id="quiz-sidebar" style="width:20%;min-width:280px;height:100%;background:#1a1a2e;color:#e0e0e0;overflow-y:auto;">
+                <div style="padding:8px;font-size:11px;color:#888;">⏳ 加载中...</div>
+            </div>
             <div id="mouted" style="flex:1;height:100%;position:relative;"></div>
         </div>
+        <div id="debug-log" style="position:fixed;bottom:0;left:0;right:0;max-height:120px;overflow-y:auto;background:rgba(0,0,0,0.9);color:#0f0;font:11px monospace;padding:4px 8px;display:none;z-index:9999;"></div>
+        <script>
+        // 捕获所有错误便于诊断
+        window._errors = [];
+        window.onerror = function(msg, url, line, col, err) {
+            var s = '[ERROR] ' + msg + ' @ line ' + line;
+            window._errors.push(s);
+            var d = document.getElementById('debug-log');
+            if (d) { d.style.display='block'; d.innerHTML += s + '<br>'; }
+        };
+        console._error = console.error;
+        console.error = function() {
+            var args = Array.prototype.slice.call(arguments);
+            var s = '[LOG] ' + args.join(' ');
+            window._errors.push(s);
+            var d = document.getElementById('debug-log');
+            if (d) { d.style.display='block'; d.innerHTML += s + '<br>'; }
+            console._error.apply(console, args);
+        };
+        </script>
     </body>
 </html>

@@ -36,6 +36,8 @@ export const QuizEvents = {
   QUIZ_DEPLOY_CANCELLED: EVENT_TYPE.QUIZ_DEPLOY_CANCELLED,
   QUIZ_WAVE_START: EVENT_TYPE.QUIZ_WAVE_START,
   QUIZ_WAVE_ALL_COMPLETE: EVENT_TYPE.QUIZ_WAVE_ALL_COMPLETE,
+  UPGRADE_SUCCESS: EVENT_TYPE.QUIZ_UPGRADE_SUCCESS,
+  UPGRADE_WRONG: EVENT_TYPE.QUIZ_UPGRADE_WRONG,
 } as const;
 
 class QuizEngine extends Message {
@@ -187,6 +189,35 @@ class QuizEngine extends Message {
     }
 
     return result;
+  }
+
+  /**
+   * 提交升级代码（关卡完成后使用）
+   * 使用简化的编译验证：代码非空且包含基本 C++ 语法
+   */
+  submitUpgradeCode(code: string): ValidationResult {
+    if (!code.trim()) {
+      const result = { passed: false, failures: ["代码不能为空"] };
+      this.emit(QuizEvents.UPGRADE_WRONG, result.failures);
+      return result;
+    }
+
+    // 基本编译检查：必须包含分号或花括号（C++ 语句的基本特征）
+    const hasSemicolon = code.includes(";");
+    const hasBraces = code.includes("{") && code.includes("}");
+    const hasParens = code.includes("(") && code.includes(")");
+
+    if (!hasSemicolon && !hasBraces) {
+      const result = { passed: false, failures: ["C++ 代码需要包含分号 (;) 或函数体 ({ })"] };
+      this.emit(QuizEvents.UPGRADE_WRONG, result.failures);
+      return result;
+    }
+
+    // 编译通过
+    this.score += 5;
+    this.emit(QuizEvents.UPGRADE_SUCCESS, code);
+    this.emit(QuizEvents.SCORE_CHANGE, this.score, this.completedCount);
+    return { passed: true, failures: [] };
   }
 
   /**

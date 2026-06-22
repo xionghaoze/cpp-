@@ -103,7 +103,7 @@ class QuizUI {
     this.textarea = document.createElement("textarea");
     this.textarea.id = "quiz-textarea";
     this.textarea.style.cssText =
-      "flex:1;height:140px;background:#0d1117;color:#c9d1d9;border:1px solid #0f3460;padding:8px;font:13px 'Consolas','Courier New',monospace;resize:vertical;border-radius:0 4px 4px 0;outline:none;line-height:1.5;";
+      "flex:1;height:140px;background:#0d1117;color:#c9d1d9;border:1px solid #0f3460;padding:8px;font:13px 'Consolas','Courier New',monospace;resize:vertical;border-radius:0 4px 4px 0;outline:none;line-height:1.5;pointer-events:auto;user-select:text;-webkit-user-select:text;z-index:1;position:relative;";
     this.textarea.placeholder = "在此输入 C++ 代码...";
     this.textarea.spellcheck = false;
 
@@ -223,29 +223,7 @@ class QuizUI {
       this.textarea.removeEventListener("input", inputHandler)
     );
 
-    // 聚焦时暂停游戏，失焦时恢复
-    const focusHandler = () => {
-      try {
-        Main.getMain().pauseGame();
-      } catch (_) {
-        /* Main 可能尚未初始化 */
-      }
-    };
-    const blurHandler = () => {
-      try {
-        Main.getMain().continueGame();
-      } catch (_) {
-        /* Main 可能尚未初始化 */
-      }
-    };
-    this.textarea.addEventListener("focus", focusHandler);
-    this.textarea.addEventListener("blur", blurHandler);
-    this.onDestroy.push(() =>
-      this.textarea.removeEventListener("focus", focusHandler)
-    );
-    this.onDestroy.push(() =>
-      this.textarea.removeEventListener("blur", blurHandler)
-    );
+    // 不再暂停游戏 — 键盘事件在 all.ts 中通过 isEditableFocused() 处理
   }
 
   /**
@@ -265,8 +243,7 @@ class QuizUI {
     });
 
     m.on(QuizEvents.ANSWER_CORRECT, () => {
-      this.showFeedback("success", "✅ 答案正确！获得新防御塔奖励！");
-      // 按钮保持禁用，等待下一题
+      this.showFeedback("success", "✅ 编译通过！⏰ 时间开始流动，防御塔已部署！");
     });
 
     m.on(QuizEvents.SCORE_CHANGE, (score: number, completed: number) => {
@@ -297,6 +274,26 @@ class QuizUI {
       this.submitBtn.style.cursor = "not-allowed";
       this.hintBtn.style.display = "none";
     });
+
+    // ===== 升级代码事件 =====
+    m.on(QuizEvents.UPGRADE_SUCCESS, () => {
+      this.showFeedback("success", "✅ 编译通过！防御塔已升级！<br>可以继续提交代码强化防御塔。");
+      this.enableSubmit();
+      this.submitBtn.textContent = "提交升级代码 (Ctrl+Enter)";
+      this.submitBtn.style.background = "#f39c12";
+      setTimeout(() => this.textarea.focus(), 100);
+    });
+
+    m.on(QuizEvents.UPGRADE_WRONG, (failures: string[]) => {
+      this.showFeedback(
+        "error",
+        "❌ 编译失败：<br>" +
+          failures.map((f) => "&#10007; " + f).join("<br>")
+      );
+      this.enableSubmit();
+      this.submitBtn.textContent = "提交升级代码 (Ctrl+Enter)";
+      this.submitBtn.style.background = "#f39c12";
+    });
   }
 
   /**
@@ -316,7 +313,13 @@ class QuizUI {
     this.submitBtn.style.cursor = "wait";
 
     setTimeout(() => {
-      this.engine.submitAnswer(code);
+      if (this.engine.currentQuestion) {
+        // 有当前题目 → 正常答题
+        this.engine.submitAnswer(code);
+      } else {
+        // 没有题目（关卡已完成）→ 提交升级代码
+        this.engine.submitUpgradeCode(code);
+      }
     }, 100);
   }
 
@@ -346,28 +349,17 @@ class QuizUI {
    */
   private showLevelComplete(level: QuizLevel): void {
     this.levelCompleteOverlay.style.display = "block";
-    const isLastLevel =
-      level.id === this.engine.totalLevels;
     this.levelCompleteOverlay.innerHTML = `
-      <div style="font-size:18px;font-weight:bold;margin-bottom:6px;">
-        🏆 ${level.name} — 通过！
+      <div style="font-size:16px;font-weight:bold;margin-bottom:4px;">
+        🏆 ${level.name} — 题目全部完成！
       </div>
-      <div style="font-size:13px;color:#aaa;">
-        ${isLastLevel
-          ? "所有关卡已完成！你已掌握了 C++ 核心概念。"
-          : "请在右侧地图部署防御塔，然后点击「开始出怪」按钮！"
-        }
+      <div style="font-size:12px;color:#f39c12;">
+        ⚡ 可继续提交代码升级防御塔
       </div>
-      ${!isLastLevel
-        ? '<div style="margin-top:8px;font-size:12px;color:#53a8b6;">⬇ 部署塔后点击「开始出怪」进入下一关</div>'
-        : ""
-      }
     `;
-    this.submitBtn.disabled = true;
-    this.submitBtn.textContent = "关卡完成";
-    this.submitBtn.style.background = "#2ecc71";
-    this.submitBtn.style.cursor = "not-allowed";
-    this.hintBtn.style.display = "none";
+    this.enableSubmit();
+    this.submitBtn.textContent = "提交升级代码 (Ctrl+Enter)";
+    this.submitBtn.style.background = "#f39c12";
   }
 
   /**

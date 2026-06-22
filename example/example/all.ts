@@ -39,10 +39,8 @@ function test222() {
 }
 window.test2 = test222
 m.mouted(document.getElementById("mouted"))
-if (process.env.NODE_ENV === "development") {
-  window.testMain = m
-  window.MainStruct = Main
-}
+window.testMain = m
+window.MainStruct = Main
 
 userUtilsPro.xhrLoad("gameData/gameData.bin", function(e:any) {
   if (e === false) {
@@ -141,62 +139,44 @@ m.on(EVENT_TYPE.LOAD_SCENEED, function() {
   // }) as AnimatedSprite
   // Main.getMain().getNowScene().addChild(amt)
 })
+/** 检查是否有输入控件正在聚焦 — 若是则不拦截事件 */
+function isEditableFocused(): boolean {
+  const el = document.activeElement
+  if (!el) return false
+  const tag = (el as HTMLElement).tagName
+  if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return true
+  if ((el as HTMLElement).isContentEditable) return true
+  if ((el as HTMLElement).closest("#quiz-sidebar")) return true
+  return false
+}
+
 window.onkeydown = function(e:any) {
-  // 当用户在答题面板的 textarea 中输入时，不拦截键盘事件
-  if (document.activeElement && document.activeElement.id === "quiz-textarea") {
-    return
-  }
+  if (isEditableFocused()) return
   e.stopPropagation()
   e.preventDefault()
-  m.keydown({
-    code: e.code,
-    shift: e.shiftKey,
-    alt: e.altKey
-  })
+  m.keydown({ code: e.code, shift: e.shiftKey, alt: e.altKey })
 }
 window.onkeyup = function(e:any) {
+  if (isEditableFocused()) return
   e.stopPropagation()
   e.preventDefault()
-  m.keyup({
-    code: e.code,
-    shift: e.shiftKey,
-    alt: e.altKey
-  })
+  m.keyup({ code: e.code, shift: e.shiftKey, alt: e.altKey })
 }
 window.onresize = function() {
   m.resizeEvent()
 }
 window.addEventListener("mousewheel", (e:WheelEvent) => {
-  // console.log(e.clientX, e.clientY)
-  // console.log(e, "nodom")
+  if ((e.target as HTMLElement).closest?.("#quiz-sidebar")) return
   m.mouseWheel({
-    directionX: e.deltaX,
-    directionY: e.deltaY,
-    shift: e.shiftKey,
-    alt: e.altKey,
-    clientX: e.clientX,
-    clientY: e.clientY, e: e
+    directionX: e.deltaX, directionY: e.deltaY,
+    shift: e.shiftKey, alt: e.altKey,
+    clientX: e.clientX, clientY: e.clientY, e: e
   })
 })
-// window.addEventListener("DOMMouseScroll", (e:any) => {
-//   console.log(e, "dom")
-// })
-
-// userUtilsPro.xhrLoad('/gameData/gameData.json', function(e:any) {
-// })
-
 window.oncontextmenu = function(e:any) {
-  // const pointEvent = {
-  //   offsetY: e.offsetY,
-  //   offsetX: e.offsetX,
-  //   clientX: e.clientX,
-  //   clientY: e.clientY,
-  //   screenX: e.screenX,
-  //   screenY: e.screenY
-  // }
+  if (isEditableFocused()) return
   e.preventDefault()
   e.returnValue = false
-  // m.rightClick(pointEvent)
 }
 
 // window.onclick = function(e:MouseEvent) {

@@ -240,7 +240,11 @@ export enum EVENT_TYPE {
   /** 波次开始 */
   QUIZ_WAVE_START = "quiz:waveStart",
   /** 所有波次完成 */
-  QUIZ_WAVE_ALL_COMPLETE = "quiz:waveAllComplete"
+  QUIZ_WAVE_ALL_COMPLETE = "quiz:waveAllComplete",
+  /** 升级代码编译通过 */
+  QUIZ_UPGRADE_SUCCESS = "quiz:upgradeSuccess",
+  /** 升级代码编译失败 */
+  QUIZ_UPGRADE_WRONG = "quiz:upgradeWrong"
 }
 
 /**

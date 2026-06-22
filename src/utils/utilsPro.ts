@@ -860,7 +860,9 @@ export const userUtilsPro = {
    * @returns 返回资源结构
    */
   getTextureSource(name: string) {
+    if (!name) return null
     const texture = utils.TextureCache[name]
+    if (!texture) return null
     const res2 = texture.baseTexture.resource as ImageResource | CanvasResource
     if (res2) {
       return {
@@ -873,7 +875,7 @@ export const userUtilsPro = {
   },
 
   genTextureCanvas(name:string) {
-    const img = userUtilsPro.getTextureSource(name)
+    const img = name ? userUtilsPro.getTextureSource(name) : null
     const cvs = document.createElement("canvas")
     const ctx = cvs.getContext("2d")
     if (img && ctx) {
@@ -892,7 +894,27 @@ export const userUtilsPro = {
       }
       return cvs
     }
-    return null
+    // 纹理不存在时 — 尝试从config取颜色值，或使用默认色
+    cvs.width = 48
+    cvs.height = 48
+    const m2 = Main.getMain()
+    const colorVal = m2?.getConfig?.(name) as string
+    if (colorVal && /^rgba?\(/.test(colorVal)) {
+      ctx.fillStyle = colorVal
+    } else {
+      // 根据name推断颜色
+      const colorMap: Record<string, string> = {
+        tower: 'rgba(46,204,113,0.6)',
+        path: 'rgba(100,100,120,0.8)',
+        road: 'rgba(150,150,160,0.7)',
+        grass: 'rgba(39,174,96,0.5)',
+        water: 'rgba(52,152,219,0.5)',
+        wall: 'rgba(149,165,166,0.7)',
+      }
+      ctx.fillStyle = colorMap[name] || 'rgba(80,80,100,0.5)'
+    }
+    ctx.fillRect(0, 0, 48, 48)
+    return cvs
   },
 
   /**

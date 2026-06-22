@@ -18,66 +18,66 @@ interface TowerRefEntry {
   codeExample: string;
 }
 
-/** 所有可用的防御塔参考数据 */
+/** 所有可用的防御塔参考数据 — 与quizLevels题库对应 */
 const TOWER_REFS: TowerRefEntry[] = [
   {
     role: "pys_cook",
-    displayName: "厨师塔",
-    tag: "基础",
-    howToGet: "声明 int 变量并初始化",
-    codeExample: 'int towerLevel = 1;\n// 声明变量即可获得',
-  },
-  {
-    role: "pys_policewoman",
-    displayName: "警花塔",
-    tag: "基础",
-    howToGet: "声明多个 int 属性变量",
-    codeExample: 'int damage = 50;\nint range = 100;',
+    displayName: "基础防御塔",
+    tag: "第1关",
+    howToGet: "定义 class Tower 及构造函数",
+    codeExample: 'class Tower {\npublic:\n  int attack_;\n  Tower(int attack) {\n    attack_ = attack;\n  }\n};',
   },
   {
     role: "pys_soldier",
-    displayName: "士兵塔",
-    tag: "中级",
-    howToGet: "用 new 关键字构建对象",
-    codeExample: 'Tower myTower;\n// 或 Tower* p = new Tower();',
+    displayName: "超级防御塔",
+    tag: "第2关",
+    howToGet: "公有继承 class SuperTower : public Tower",
+    codeExample: 'class SuperTower : public Tower {\npublic:\n  SuperTower(int a) : Tower(a) {}\n};',
+  },
+  {
+    role: "pys_policewoman",
+    displayName: "狂暴防御塔",
+    tag: "第3关",
+    howToGet: "定义 upgradeAttack() 成员函数",
+    codeExample: 'void upgradeAttack() {\n  attack_ = attack_ * 2;\n}',
   },
   {
     role: "pys_nurse",
-    displayName: "护士塔",
-    tag: "高级",
-    howToGet: "用指针语法构建对象",
-    codeExample: 'Tower* pTower = new Tower();\n// 注意 * 和 new 关键字',
+    displayName: "全能防御塔",
+    tag: "第4关",
+    howToGet: "定义 upgrade(string, int) 参数化函数",
+    codeExample: 'void upgrade(string attr, int value) {\n  if (attr == "attack")\n    attack_ += value;\n}',
   },
   {
     role: "pys_nun",
-    displayName: "修女塔",
-    tag: "特殊",
-    howToGet: "通过指针调用方法",
-    codeExample: 'Tower* ptr;\nptr->upgrade();\nptr->attack();',
+    displayName: "终极防御塔",
+    tag: "第5关",
+    howToGet: "使用 for 循环批量升级",
+    codeExample: 'for (int i = 0; i < 3; i++) {\n  t.upgrade("attack", 10);\n}',
   },
 ];
 
 /** 升级参考信息 */
 const UPGRADE_REFS = [
   {
-    title: "for 循环升级 (3次)",
-    code: "for(int i = 0; i < 3; i++) {\n  t.upgrade();\n}",
-    effect: "选中塔连升 3 级",
+    title: "攻击力强化",
+    code: "t.attack_ += 10;",
+    effect: "选中塔攻击力 +10",
   },
   {
-    title: "while 循环升级 (5次)",
-    code: "while(level < 5) {\n  tower.upgrade();\n}",
-    effect: "最新塔连升 5 级",
+    title: "攻速提升",
+    code: "t.fireInterval_ -= 0.2;",
+    effect: "选中塔攻速加快",
   },
   {
-    title: "类继承 — 升级全部",
-    code: "class SuperTower : public Tower {\n};",
-    effect: "场上所有塔升 1 级",
+    title: "攻击力翻倍",
+    code: "t.attack_ = t.attack_ * 2;",
+    effect: "选中塔攻击力翻倍",
   },
   {
-    title: "带构造函数的子类",
-    code: "class FireTower : public Tower {\n  FireTower(int x, int y) {}\n};",
-    effect: "场上所有塔升 1 级 + 金币",
+    title: "for 循环批量升级",
+    code: "for (int i = 0; i < 5; i++) {\n  t.upgrade(\"attack\", 10);\n}",
+    effect: "选中塔攻击力 +50",
   },
 ];
 

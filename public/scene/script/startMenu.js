@@ -533,13 +533,8 @@ Game.on(EVENT_TYPE.OPEN_LOADED_SCENEED, function (s) {
             }
         });
 
-        // 聚焦时暂停游戏
-        gateTextarea.addEventListener("focus", function() {
-            try { Game.main.pauseGame(); } catch(_) {}
-        });
-        gateTextarea.addEventListener("blur", function() {
-            try { Game.main.continueGame(); } catch(_) {}
-        });
+        // 聚焦时不暂停游戏，保持游戏区域可操作
+        // 键盘事件在全局处理器中已正确处理
     }
     // ===== 代码提交验证系统结束 =====
 

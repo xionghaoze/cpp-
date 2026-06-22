@@ -28,8 +28,8 @@ class QuizIntegration extends Message {
   constructor(main: Main) {
     super("quizIntegration");
     this.main = main;
-    // 初始进入 quiz 模式
-    SceneUtils.quizMode = true;
+    // 允许游戏区域点击
+    SceneUtils.quizMode = false;
     this.bindEvents();
   }
 
@@ -48,10 +48,10 @@ class QuizIntegration extends Message {
   }
 
   /**
-   * 回到答题模式
+   * 回到答题模式 — 游戏时间冻结但界面仍可点击
    */
   enableQuizMode(): void {
-    SceneUtils.quizMode = true;
+    SceneUtils.quizMode = false; // 不阻止游戏区域点击
   }
 
   private bindEvents(): void {
@@ -83,6 +83,11 @@ class QuizIntegration extends Message {
     // ===== 波次开始 — 切换到战斗模式 =====
     m.on(QuizEvents.QUIZ_WAVE_START as string, () => {
       this.enableCombatMode();
+    });
+
+    // ===== 升级代码编译通过 — 升级一座防御塔 =====
+    m.on(QuizEvents.UPGRADE_SUCCESS as string, () => {
+      this.handleUpgradeSuccess();
     });
   }
 
@@ -228,6 +233,92 @@ class QuizIntegration extends Message {
       this.main.ui.resShow.goldNumber += amount;
     } catch (_) {
       /* 静默失败 */
+    }
+  }
+
+  /**
+   * 自动放置防御塔（答对题时调用）
+   * 在地图中间靠上的可放置位置创建塔
+   */
+  autoDeployTower(reward: QuizLevelReward): void {
+    const sc = this.main.getNowScene();
+    if (!sc || !reward) return;
+
+    const pos = this.findPlaceablePosition(sc);
+    if (!pos) {
+      console.warn("[QuizIntegration] 找不到可放置塔的位置");
+      return;
+    }
+
+    try {
+      const tower = Tower.createTowerForScene(reward.towerName, pos);
+      if (tower) {
+        const gm = GameMain.getGameMain();
+        if (gm && gm.sceneUtils) {
+          gm.sceneUtils.addSelectRole(tower);
+        }
+        console.log(`[QuizIntegration] 自动部署: ${reward.displayName} at (${pos.x}, ${pos.y})`);
+      }
+    } catch (err) {
+      console.error("[QuizIntegration] 自动部署失败:", err);
+    }
+  }
+
+  /**
+   * 在场景中寻找可放置塔的位置
+   */
+  private findPlaceablePosition(sc: any): { x: number; y: number } | null {
+    const sbRect = sc.getSbRect();
+    // 扫描地图中间靠上区域
+    const startX = sbRect.width * 0.3;
+    const startY = sbRect.height * 0.2;
+    const endX = sbRect.width * 0.7;
+    const endY = sbRect.height * 0.5;
+    const step = 48; // 网格大小
+
+    for (let y = startY; y < endY; y += step) {
+      for (let x = startX; x < endX; x += step) {
+        const blockP = sc.pixelCoorToGridCoor({ x, y });
+        const blockData = sc.getBlockAreaData(blockP);
+        if (blockData && blockData.type !== 1) {
+          // 找到可放置位置
+          const pixP = sc.gridCoorToPixelCoor(blockP);
+          return { x: pixP.x + 24, y: pixP.y + 24 };
+        }
+      }
+    }
+    // 没找到合适位置，返回地图中心
+    return { x: sbRect.width / 2, y: sbRect.height / 3 };
+  }
+
+  /**
+   * 升级一座已部署的防御塔（公开方法）
+   */
+  handleUpgradeSuccess(): void {
+    const gm = GameMain.getGameMain();
+    if (!gm || !gm.sceneUtils) return;
+
+    // 优先升级当前选中的塔，否则升级最新部署的塔
+    let target: Tower | null = null;
+    const selected = gm.sceneUtils._selectRoles;
+    if (selected && selected.length > 0) {
+      target = selected[0] as Tower;
+    }
+    if (!target) {
+      const all = gm.sceneUtils.getAllTower();
+      if (all.length > 0) target = all[all.length - 1] as Tower;
+    }
+    if (!target) {
+      console.warn("[QuizIntegration] 没有可升级的防御塔");
+      return;
+    }
+
+    try {
+      gm.sceneUtils.updateRole(target);
+      gm.sceneUtils.addSelectRole(target);
+      console.log("[QuizIntegration] 防御塔升级成功");
+    } catch (err) {
+      console.error("[QuizIntegration] 升级失败:", err);
     }
   }
 

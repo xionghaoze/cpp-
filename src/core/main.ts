@@ -405,9 +405,12 @@ class Main extends Msg {
       width: el.offsetWidth,
       height: el.offsetHeight
     })
-    this.$canvas = this.$app.view
+    this.$canvas = this.$app.view as HTMLCanvasElement
     this.$el = el
     this.$el.appendChild(this.$canvas)
+    // 移除 PixiJS InteractionManager 自动添加的 tabindex，防止 canvas 抢占键盘焦点
+    ;(this.$canvas).removeAttribute("tabindex")
+    ;(this.$canvas).removeAttribute("tabIndex")
     this.$app.ticker.maxFPS = 60 // 锁定最大帧
     this.$app.ticker.speed = 1 // 倍数
     this.$app.ticker.add((dt) => {
